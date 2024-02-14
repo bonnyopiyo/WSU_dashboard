@@ -32,8 +32,8 @@ ui <- secure_app(fluidPage(
       tabsetPanel(
         tabPanel("Vaccination Counts", plotlyOutput("vaccinationPlot")),
         tabPanel("Cadre Categorization", DTOutput("cadreTable")),
-        tabPanel("Geographical Mapping", leafletOutput("map")),
-        tabPanel("Progress Tracking", plotlyOutput("progressPlot")))))))
+        tabPanel("Progress Tracking", plotlyOutput("progressPlot")),
+        tabPanel("Geographical Mapping", leafletOutput("map")))))))
 
 server <- function(input, output, session) {
 
@@ -94,42 +94,65 @@ server <- function(input, output, session) {
       p  
     })
   
-  ##Gender distribution
+    ##Gender distribution
     output$genderDistributionBox <- renderUI({
       req(filtered_data())
       data <- filtered_data()
+      
+      # Counts for each gender
       female_count <- sum(data$sex == "Female", na.rm = TRUE)
+      male_count <- sum(data$sex == "Male", na.rm = TRUE)
       total_count <- nrow(data)
+      
+      # Proportions for each gender
       proportion_female <- ifelse(total_count > 0, female_count / total_count, 0)
+      proportion_male <- ifelse(total_count > 0, male_count / total_count, 0)
       
       div(
         class = "value-box",
         style = "padding: 10px; margin: 10px 0; background-color: #f2f2f2; border-radius: 5px;",
         h3("Gender Distribution"),
-        p("Female HCWs: ", strong(female_count)),
-        p("Proportion: ", strong(sprintf("%.2f%%", proportion_female * 100)))
+        div(
+          style = "margin-bottom: 5px;",
+          tags$i(class = "fa fa-male", style = "color: #337ab7;"),  # Male icon
+          span(" Male HCWs: ", strong(male_count), 
+               " (", strong(sprintf("%.2f%%", proportion_male * 100)), ")")
+        ),
+        div(
+          tags$i(class = "fa fa-female", style = "color: #d9534f;"),  # Female icon
+          span(" Female HCWs: ", strong(female_count),
+               " (", strong(sprintf("%.2f%%", proportion_female * 100)), ")")
+        )
       )
     })
+    
   
-  ##Risk level visualization
-    output$riskLevelBox <- renderUI({
-      req(filtered_data())
-      data <- filtered_data() %>%
-        group_by(risk_level) %>%
-        summarise(count = n()) %>%
-        arrange(desc(count))
-      
-      # Assuming you want to show the most common risk level as a value box
-      top_risk_level <- data[1, ]
-      
-      div(
-        class = "value-box",
-        style = "padding: 10px; background-color: #f2f2f2; border-radius: 5px;",
-        h3("Top Risk Level"),
-        p("Risk Level: ", strong(top_risk_level$risk_level)),
-        p("Count: ", strong(top_risk_level$count))
-      )
-    })
+ ##Risk level visualization
+output$riskLevelBox <- renderUI({
+  req(filtered_data())
+  data <- filtered_data() %>%
+    group_by(risk_level) %>%
+    summarise(count = n()) %>%
+    arrange(desc(count))
+  
+  # Create a UI element for each risk level
+  risk_levels_ui <- lapply(1:nrow(data), function(i) {
+    div(
+      style = "margin-bottom: 10px;",  # Add some space between risk level entries
+      h4(data$risk_level[i], style = "margin: 0;"),  # Risk level title
+      span("Count: ", strong(data$count[i]))  # Display the count for the risk level
+    )
+  })
+  
+  # Combine all risk level UI elements into one div
+  div(
+    class = "value-box",
+    style = "padding: 10px; background-color: #f2f2f2; border-radius: 5px;",
+    h3("Risk Level Distribution"),
+    risk_levels_ui  # Insert the list of risk level UI elements here
+  )
+})
+
   
   ##Cadre categorization
     output$cadreTable <- renderDT({
@@ -148,6 +171,7 @@ server <- function(input, output, session) {
         formatStyle('Percentage', textAlign = 'right')})
   
   ##Geographical mapping
+    ##Geographical mapping
     output$map <- renderLeaflet({
       
       ##Shape file
@@ -180,7 +204,13 @@ server <- function(input, output, session) {
           color = "#BDBDC3",
           weight = 1,
           fillOpacity = 0.7,
-          popup = ~paste(subcounty, ": ", vaccinated_hcw_count, " vaccinated HCWs")
+          popup = ~paste(subcounty, ": ", vaccinated_hcw_count, " vaccinated HCWs"),
+          label = ~paste(subcounty, ": ", vaccinated_hcw_count, " vaccinated HCWs"),  # Hover text
+          labelOptions = labelOptions(
+            style = list("font-weight" = "normal", padding = "3px 8px"),
+            textsize = "13px",
+            direction = "auto"
+          )
         ) %>%
         addLegend(
           position = "bottomright",
@@ -190,6 +220,7 @@ server <- function(input, output, session) {
           opacity = 1
         )
     })
+    
     
   ##Progress tracking
   output$progressPlot <- renderPlotly({

@@ -7,6 +7,7 @@ library(plotly)
 library(leaflet)
 library(DT)
 library(sf)
+library(shinyWidgets)
 
 ##Data loading
 HCWs_data <- readRDS("~/WSU_dashboard/HCWDashboard.rds")
@@ -26,7 +27,7 @@ ui <- secure_app(fluidPage(
       selectInput("subcountyInput", "Subcounty", choices = unique(HCWs_data$subcounty), selected = "Default Subcounty"),
       #actionButton("update", "Update"),
       uiOutput("genderDistributionBox"),  
-      uiOutput("riskLevelBox")  
+      plotlyOutput("riskLevelPlot")  
     ),
     mainPanel(
       tabsetPanel(
@@ -128,31 +129,21 @@ server <- function(input, output, session) {
     
   
  ##Risk level visualization
-output$riskLevelBox <- renderUI({
-  req(filtered_data())
-  data <- filtered_data() %>%
-    group_by(risk_level) %>%
-    summarise(count = n()) %>%
-    arrange(desc(count))
-  
-  # Create a UI element for each risk level
-  risk_levels_ui <- lapply(1:nrow(data), function(i) {
-    div(
-      style = "margin-bottom: 10px;",  # Add some space between risk level entries
-      h4(data$risk_level[i], style = "margin: 0;"),  # Risk level title
-      span("Count: ", strong(data$count[i]))  # Display the count for the risk level
-    )
-  })
-  
-  # Combine all risk level UI elements into one div
-  div(
-    class = "value-box",
-    style = "padding: 10px; background-color: #f2f2f2; border-radius: 5px;",
-    h3("Risk Level Distribution"),
-    risk_levels_ui  # Insert the list of risk level UI elements here
-  )
-})
-
+    output$riskLevelPlot <- renderPlotly({
+      req(filtered_data())
+      data <- filtered_data() %>%
+        group_by(risk_level) %>%
+        summarise(count = n()) %>%
+        arrange(desc(count))
+      
+      plot_ly(data, x = ~risk_level, y = ~count, type = 'bar', 
+              marker = list(color = 'rgba(50, 171, 96, 0.7)',
+                            line = list(color = 'rgba(50, 171, 96, 1.0)', width = 2))) %>%
+        layout(title = "Risk Level Distribution",
+               xaxis = list(title = "Risk Level"),
+               yaxis = list(title = "Count"),
+               hovermode = "closest")
+    })
   
   ##Cadre categorization
     output$cadreTable <- renderDT({
@@ -171,7 +162,6 @@ output$riskLevelBox <- renderUI({
         formatStyle('Percentage', textAlign = 'right')})
   
   ##Geographical mapping
-    ##Geographical mapping
     output$map <- renderLeaflet({
       
       ##Shape file
@@ -220,7 +210,6 @@ output$riskLevelBox <- renderUI({
           opacity = 1
         )
     })
-    
     
   ##Progress tracking
   output$progressPlot <- renderPlotly({

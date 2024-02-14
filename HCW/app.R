@@ -22,14 +22,15 @@ ui <- secure_app(fluidPage(
   titlePanel("HCWs Vaccination in Kakamega County"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("teamInput", "Select Team", choices = NULL),  ##Update choices dynamically in server
-      selectInput("subcountyInput", "Select Subcounty", choices = NULL),
-      actionButton("update", "Update")),
+      selectInput("teamInput", "Select Team", choices = unique(HCWs_data$team), selected = "Default Team"),
+      selectInput("subcountyInput", "Subcounty", choices = unique(HCWs_data$subcounty), selected = "Default Subcounty"),
+      #actionButton("update", "Update"),
+      uiOutput("genderDistributionBox"),  
+      uiOutput("riskLevelBox")  
+    ),
     mainPanel(
       tabsetPanel(
         tabPanel("Vaccination Counts", plotlyOutput("vaccinationPlot")),
-        tabPanel("Gender Distribution", uiOutput("femaleHCWBox")),
-        tabPanel("Risk Level", plotlyOutput("riskLevelPlot")),
         tabPanel("Cadre Categorization", DTOutput("cadreTable")),
         tabPanel("Geographical Mapping", leafletOutput("map")),
         tabPanel("Progress Tracking", plotlyOutput("progressPlot")))))))
@@ -39,10 +40,19 @@ server <- function(input, output, session) {
     ##Reactive values to store filtered data
     filtered_data <- reactiveVal()
     
+    # Default data to display before any user interaction:
+    default_data <- HCWs_data %>% 
+      filter(team == "Default Team", subcounty == "Default Subcounty")
+    
+    filtered_data(default_data)
+    
     ##Populate team and subcounty dropdowns
     observe({
-      updateSelectInput(session, "teamInput", choices = unique(HCWs_data$team))
-      updateSelectInput(session, "subcountyInput", choices = unique(HCWs_data$subcounty))
+      req(input$teamInput, input$subcountyInput)  # Require inputs to be available
+      # Now update the filtered_data
+      filtered_data(HCWs_data %>%
+                      filter(team == input$teamInput,
+                             subcounty == input$subcountyInput))
     })
     
     ##Update subcountyInput when teamInput is selected
@@ -64,6 +74,7 @@ server <- function(input, output, session) {
     
     ##Vaccination counts plot  
     output$vaccinationPlot <- renderPlotly({
+      req(filtered_data())
       data <- filtered_data() %>%
         arrange(date) %>%
         group_by(date) %>%
@@ -84,33 +95,45 @@ server <- function(input, output, session) {
     })
   
   ##Gender distribution
-    output$femaleHCWBox <- renderUI({
+    output$genderDistributionBox <- renderUI({
+      req(filtered_data())
       data <- filtered_data()
       female_count <- sum(data$sex == "Female", na.rm = TRUE)
       total_count <- nrow(data)
       proportion_female <- ifelse(total_count > 0, female_count / total_count, 0)
-      proportion_text <- paste0("Proportion: ", scales::percent(proportion_female))
       
       div(
-        style = "padding: 20px; background-color: pink; color: white; border-radius: 5px; display: inline-block;",
-        tags$i(class = "fa fa-female", style = "font-size: 48px;"),  # Female icon
-        tags$h3(style = "margin: 10px 0;", female_count, " Female HCWs"),
-        tags$p(style = "margin: 0;", proportion_text)
-      )})
+        class = "value-box",
+        style = "padding: 10px; margin: 10px 0; background-color: #f2f2f2; border-radius: 5px;",
+        h3("Gender Distribution"),
+        p("Female HCWs: ", strong(female_count)),
+        p("Proportion: ", strong(sprintf("%.2f%%", proportion_female * 100)))
+      )
+    })
   
   ##Risk level visualization
-    output$riskLevelPlot <- renderPlotly({
+    output$riskLevelBox <- renderUI({
+      req(filtered_data())
       data <- filtered_data() %>%
         group_by(risk_level) %>%
-        summarise(count = n())
+        summarise(count = n()) %>%
+        arrange(desc(count))
       
-      plot_ly(data, labels = ~risk_level, values = ~count, type = 'pie', hole = 0.4,
-              textinfo = 'label+percent', insidetextorientation = 'radial') %>%
-        layout(title = 'Risk Level Distribution Among HCWs')
+      # Assuming you want to show the most common risk level as a value box
+      top_risk_level <- data[1, ]
+      
+      div(
+        class = "value-box",
+        style = "padding: 10px; background-color: #f2f2f2; border-radius: 5px;",
+        h3("Top Risk Level"),
+        p("Risk Level: ", strong(top_risk_level$risk_level)),
+        p("Count: ", strong(top_risk_level$count))
+      )
     })
   
   ##Cadre categorization
     output$cadreTable <- renderDT({
+      req(filtered_data())
       data <- filtered_data() %>%
         group_by(cadre) %>%
         summarise(Count = n()) %>%
@@ -170,6 +193,7 @@ server <- function(input, output, session) {
     
   ##Progress tracking
   output$progressPlot <- renderPlotly({
+    req(filtered_data())
     total_vaccinations <- filtered_data() %>%
       nrow()  # Count the total number of vaccinated HCWs
     target <- 7500

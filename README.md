@@ -1,7 +1,7 @@
 # HCWs Vaccination Dashboard
 
 ## Overview
-This Shiny dashboard is designed to monitor and visualize the vaccination data of healthcare workers (HCWs) across various facilities over a specified timeframe. The dashboard provides insights into daily and cumulative vaccination counts, gender distribution, risk level distribution, professional cadre categorization, and geographical mapping of vaccination coverage within Kakamega county.
+This Shiny dashboard is designed to monitor and visualize the vaccination data of healthcare workers (HCWs) across various subcounties in Kakamega County over a specified timeframe. The dashboard provides insights into daily and cumulative vaccination counts, gender distribution, risk level distribution, professional cadre categorization, and geographical mapping of vaccination coverage within Kakamega county.
 
 ## Features
 - **Dynamic Filtering**: Users can select specific vaccination teams and subcounties to view targeted data visualizations.
@@ -11,8 +11,6 @@ This Shiny dashboard is designed to monitor and visualize the vaccination data o
 - **Cadre Categorization**: Detailed insights into the professional cadre of vaccinated HCWs, ranked from the most to the least common.
 - **Geographical Mapping**: Interactive map showing the distribution of vaccinated HCWs by subcounty within Kakamega county.
 - **Progress Tracking**: Visual representation of progress towards the vaccination target of 7,500 HCWs, displayed in numbers and percentages.
-- **Age Distribution**: Histogram showing the age distribution of vaccinated HCWs.
-- **Data Export**: Functionality to download filtered datasets for external use.
 
 ## Data Structure
 The dashboard utilizes a dataset with the following structure:

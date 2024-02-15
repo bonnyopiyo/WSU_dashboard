@@ -18,60 +18,68 @@ credentials <- data.frame(
   password = c("pass1", "adminpass"), 
   stringsAsFactors = FALSE)
 
-##User Interface Design 
 ui <- secure_app(fluidPage(
   titlePanel("HCWs Vaccination in Kakamega County"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("teamInput", "Select Team", choices = unique(HCWs_data$team), selected = "Default Team"),
-      selectInput("subcountyInput", "Subcounty", choices = unique(HCWs_data$subcounty), selected = "Default Subcounty"),
-      #actionButton("update", "Update"),
-      uiOutput("genderDistributionBox"),  
-      plotlyOutput("riskLevelPlot")  
+      selectInput("teamInput", "Select Team", choices = NULL),  # Choices updated in server
+      selectInput("subcountyInput", "Subcounty", choices = NULL),  # Choices updated in server
+      uiOutput("genderDistributionBox"),  # Gender distribution as a value box
+      plotlyOutput("riskLevelPlot")  # Risk level visualization
     ),
     mainPanel(
       tabsetPanel(
         tabPanel("Vaccination Counts", plotlyOutput("vaccinationPlot")),
         tabPanel("Cadre Categorization", DTOutput("cadreTable")),
         tabPanel("Progress Tracking", plotlyOutput("progressPlot")),
-        tabPanel("Geographical Mapping", leafletOutput("map")))))))
+        tabPanel("Geographical Mapping", leafletOutput("map"))
+      )
+    )
+  )
+))
+
 
 server <- function(input, output, session) {
 
-    ##Reactive values to store filtered data
-    filtered_data <- reactiveVal()
+  ## Reactive value to store filtered data
+  filtered_data <- reactiveVal()
+  
+  ## Populate team dropdown
+  observe({
+    updateSelectInput(session, "teamInput", choices = unique(HCWs_data$team))
+  })
+  
+  ## Update subcountyInput based on teamInput selection
+  observeEvent(input$teamInput, {
+    ## Find subcounties associated with the selected team
+    associated_subcounties <- HCWs_data %>%
+      filter(team == input$teamInput) %>%
+      .$subcounty %>%
+      unique()
     
-    # Default data to display before any user interaction:
-    default_data <- HCWs_data %>% 
-      filter(team == "Default Team", subcounty == "Default Subcounty")
+    ## Update subcountyInput choices
+    updateSelectInput(session, "subcountyInput", choices = associated_subcounties)
+  })
+  
+  ## Update filtered data based on selections or special categorization for CHMT in Lurambi
+  observe({
+    req(input$teamInput, input$subcountyInput)  ## Ensure inputs are available
     
-    filtered_data(default_data)
+    ## Filter data based on selections
+    temp_filtered_data <- HCWs_data %>%
+      filter(team %in% input$teamInput,
+             subcounty %in% input$subcountyInput)
     
-    ##Populate team and subcounty dropdowns
-    observe({
-      req(input$teamInput, input$subcountyInput)  # Require inputs to be available
-      # Now update the filtered_data
-      filtered_data(HCWs_data %>%
-                      filter(team == input$teamInput,
-                             subcounty == input$subcountyInput))
-    })
+    ## Special handling for CHMT within Lurambi subcounty
+    if ("CHMT" %in% input$teamInput && "Lurambi" %in% input$subcountyInput) {
+      temp_filtered_data <- temp_filtered_data %>%
+        mutate(subcounty = if_else(subcounty == "CHMT", "Lurambi", subcounty))
+    }
     
-    ##Update subcountyInput when teamInput is selected
-    observeEvent(input$teamInput, {
-      ##The assumption l made is each team works in only one subcounty, 
-      selected_subcounty <- HCWs_data %>%
-        filter(team == input$teamInput) %>%
-        .$subcounty %>%
-        unique()
-      
-      ##Update subcountyInput to the subcounty corresponding to the selected team
-      updateSelectInput(session, "subcountyInput", selected = selected_subcounty)})
-    
-    ##Update filtered data based on selections
-    observeEvent(input$update, {
-      filtered_data(HCWs_data %>%
-                      filter(team %in% input$teamInput,
-                             subcounty %in% input$subcountyInput))})
+    ## Update the reactive value
+    filtered_data(temp_filtered_data)
+  })
+  
     
     ##Vaccination counts plot  
     output$vaccinationPlot <- renderPlotly({

@@ -7,6 +7,7 @@ This Shiny dashboard is designed to monitor and visualize the vaccination data o
 
 ## Features
 - **Dynamic Filtering**: Users can select specific vaccination teams and subcounties to view targeted data visualizations.
+  ![Dashboard Screenshot](screenshots/filter_selection_3.jpg "Teams")
 - **Vaccination Counts**: Visualization of both daily and cumulative vaccination numbers.
 - **Gender Distribution**: Breakdown of vaccinated HCWs by gender, with visual representation.
 - **Risk Level Summary**: Overview of the risk level distribution among vaccinated HCWs.

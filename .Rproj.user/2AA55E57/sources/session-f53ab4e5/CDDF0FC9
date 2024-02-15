@@ -1,0 +1,26 @@
+{
+    "id": "CDDF0FC9",
+    "path": "~/WSU_dashboard/HCW/app.R",
+    "project_path": "HCW/app.R",
+    "type": "r_source",
+    "hash": "4058560094",
+    "contents": "",
+    "dirty": false,
+    "created": 1707848886279.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "254,21",
+        "scrollLine": "239"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1707977374,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1707977374538,
+    "read_only": false,
+    "read_only_alternatives": []
+}

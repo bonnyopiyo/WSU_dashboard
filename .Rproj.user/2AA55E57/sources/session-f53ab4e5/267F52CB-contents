@@ -1,0 +1,33 @@
+# Define your CSS rules
+custom_css <- "
+  /* General body style */
+  body {
+    color: #2C3E50; /* Dark blue color for text */
+    background-color: #EAECEE; /* Light grey background for contrast */
+  }
+  
+  /* Style for the title in titlePanel */
+  .shinydashboard-header, .shiny-title {
+    color: #FFFFFF; /* White text */
+    background-color: #3498DB; /* Blue background */
+  }
+  
+  /* Style for action buttons */
+  .btn {
+    background-color: #3498DB; /* Blue background */
+    color: #FFFFFF; /* White text */
+  }
+  
+  /* Style for input controls like selectInput */
+  .form-control {
+    border-color: #3498DB; /* Blue border */
+  }
+  
+  /* Style for box elements in the main panel */
+  .box {
+    border-top-color: #3498DB; /* Blue border at the top of the box */
+  }
+  
+  /* Additional styles can be added as needed */
+"
+

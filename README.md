@@ -22,6 +22,9 @@ The dashboard utilizes a dataset with the following structure:
 - `cadre`: Professional cadre of the HCW
 - `risk_level`: Assessed risk level of the HCW
 
+ ## Pass to Authenticate 
+- username: user1
+- password: pass1
 ## Installation and Usage
 1. Ensure you have R and RStudio installed on your computer.
 2. Install the required R packages if you haven't already: `shiny`, `shinymanager`, `dplyr`, `ggplot2`, `plotly`, `leaflet`, `DT`, `sf`, `shinyWidgets`, `highcharter`.

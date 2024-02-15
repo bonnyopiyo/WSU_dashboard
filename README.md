@@ -6,14 +6,26 @@ This Shiny dashboard is designed to monitor and visualize the vaccination data o
 
 
 ## Features
+- **Secure Access**: Users are required to input username and password for them to login. In case of a wrong pass users are barred from access.
+  <p float="left">
+  <img src="screenshots/login_page_1.jpg" width="400" />
+  <img src="screenshots/login2.jpg" width="400" /> 
+</p>
+
 - **Dynamic Filtering**: Users can select specific vaccination teams and subcounties to view targeted data visualizations.
   ![Dashboard Screenshot](screenshots/filter_selection_3.jpg "Teams")
 - **Vaccination Counts**: Visualization of both daily and cumulative vaccination numbers.
+   ![Dashboard Screenshot](screenshots/vaccination_count.jpg "Teams")
 - **Gender Distribution**: Breakdown of vaccinated HCWs by gender, with visual representation.
+  ![Dashboard Screenshot](screenshots/gender_distribution.jpg "Teams")
 - **Risk Level Summary**: Overview of the risk level distribution among vaccinated HCWs.
+  ![Dashboard Screenshot](screenshots/gender_distribution.jpg "Gender")
 - **Cadre Categorization**: Detailed insights into the professional cadre of vaccinated HCWs, ranked from the most to the least common.
+  ![Dashboard Screenshot](screenshots/risk_level.jpg "Risk")
 - **Geographical Mapping**: Interactive map showing the distribution of vaccinated HCWs by subcounty within Kakamega county.
+  ![Dashboard Screenshot](screenshots/geographical_mapping_6.jpg "Mapping")
 - **Progress Tracking**: Visual representation of progress towards the vaccination target of 7,500 HCWs, displayed in numbers and percentages.
+![Dashboard Screenshot](screenshots/progress_track.jpg "Progress Tracker")
 
 ## Data Structure
 The dashboard utilizes a dataset with the following structure:

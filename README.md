@@ -2,6 +2,8 @@
 
 ## Overview
 This Shiny dashboard is designed to monitor and visualize the vaccination data of healthcare workers (HCWs) across various subcounties in Kakamega County over a specified timeframe. The dashboard provides insights into daily and cumulative vaccination counts, gender distribution, risk level distribution, professional cadre categorization, and geographical mapping of vaccination coverage within Kakamega county.
+![Dashboard Screenshot](screenshots/initial_landing_2.jpg "Dashboard Interface")
+
 
 ## Features
 - **Dynamic Filtering**: Users can select specific vaccination teams and subcounties to view targeted data visualizations.

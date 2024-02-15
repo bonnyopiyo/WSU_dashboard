@@ -25,11 +25,11 @@ This Shiny dashboard is designed to monitor and visualize the vaccination data o
 - **Vaccination Counts**: Visualization of both daily and cumulative vaccination numbers.
    ![Dashboard Screenshot](screenshots/vaccination_count.jpg "Teams")
 - **Gender Distribution**: Breakdown of vaccinated HCWs by gender, with visual representation.
-  ![Dashboard Screenshot](screenshots/gender_distribution.jpg "Teams")
-- **Risk Level Summary**: Overview of the risk level distribution among vaccinated HCWs.
   ![Dashboard Screenshot](screenshots/gender_distribution.jpg "Gender")
+- **Risk Level Summary**: Overview of the risk level distribution among vaccinated HCWs.
+  ![Dashboard Screenshot](screenshots/risk_level.jpg "Risk Level")
 - **Cadre Categorization**: Detailed insights into the professional cadre of vaccinated HCWs, ranked from the most to the least common.
-  ![Dashboard Screenshot](screenshots/risk_level.jpg "Risk")
+  ![Dashboard Screenshot](screenshots/cadre_categ.jpg "Cadre")
 - **Geographical Mapping**: Interactive map showing the distribution of vaccinated HCWs by subcounty within Kakamega county.
   ![Dashboard Screenshot](screenshots/geographical_mapping_6.jpg "Mapping")
 - **Progress Tracking**: Visual representation of progress towards the vaccination target of 7,500 HCWs, displayed in numbers and percentages.

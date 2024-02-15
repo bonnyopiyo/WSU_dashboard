@@ -10,7 +10,7 @@ library(sf)
 library(shinyWidgets)
 
 ##Data loading
-HCWs_data <- readRDS("C:/Users/user/Documents/WSU_dashboard/HCW/HCWDashboard.rds")
+HCWs_data <- readRDS("HCWDashboard.rds")
 
 ##Authentication setup
 credentials <- data.frame(
@@ -165,7 +165,7 @@ server <- function(input, output, session) {
     output$map <- renderLeaflet({
       
       ##Shape file
-      shapefile_data <- st_read("C:/Users/user/Documents/WSU_dashboard/HCW/gadm41_KEN_shp/gadm41_KEN_3.shp")
+      shapefile_data <- st_read("gadm41_KEN_shp/gadm41_KEN_3.shp")
       
       ##Filter for Kakamega county
       kakamega_data <- shapefile_data %>%

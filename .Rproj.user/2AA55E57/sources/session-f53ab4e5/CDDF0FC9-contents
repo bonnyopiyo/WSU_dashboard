@@ -8,6 +8,7 @@ library(leaflet)
 library(DT)
 library(sf)
 library(shinyWidgets)
+library(highcharter)
 
 ##Data loading
 HCWs_data <- readRDS("HCWDashboard.rds")
@@ -19,24 +20,89 @@ credentials <- data.frame(
   stringsAsFactors = FALSE)
 
 ui <- secure_app(fluidPage(
-  titlePanel("HCWs Vaccination in Kakamega County"),
+  tags$head(
+    tags$style(HTML("
+      /* General background */
+      body { background-color: #E6F2FF; }
+      
+      /* Titles and text */
+      .navbar, .navbar-default {
+        background-color: #337AB7;
+        border-color: #337AB7;
+      }
+      .navbar-default .navbar-nav > li > a,
+      .navbar-default .navbar-brand {
+        color: #FFF;
+      }
+      h1, h2, h3, h4, h5, h6, .shiny-text-output {
+        color: #20568F;
+      }
+      
+      /* Sidebar panel styling */
+      .sidebar {
+        background-color: #D9E3F0;
+        border-color: #D9E3F0;
+      }
+      
+      /* Main panel styling */
+      .main-panel, .tab-content {
+        background-color: #F7FBFF;
+        border-color: #B0C4DE;
+      }
+      
+      /* Input fields and select boxes */
+      .form-control, .selectize-input, .selectize-control.single .selectize-input.input-active {
+        border-color: #6C8EBF;
+      }
+      
+      /* Action buttons */
+      .btn-primary {
+        background-color: #337AB7;
+        border-color: #2E6DA4;
+      }
+      .btn-primary:hover, .btn-primary:active, .btn-primary.hover {
+        background-color: #286090;
+        border-color: #204D74;
+      }
+      
+      /* Tabs and navigation */
+      .nav-tabs > li > a {
+        color: #337AB7;
+      }
+      .nav-tabs > li.active > a, .nav-tabs > li.active > a:focus, .nav-tabs > li.active > a:hover {
+        color: #FFF;
+        background-color: #337AB7;
+        border-color: #337AB7;
+      }
+      
+      /* Tables */
+      .table > thead > tr > th {
+        background-color: #D9E3F0;
+        color: #20568F;
+      }
+    "))
+  ),
+  titlePanel("HCWs Vaccination in Kakamega County", windowTitle = "HCWs Dashboard"),
   sidebarLayout(
     sidebarPanel(
       selectInput("teamInput", "Select Team", choices = NULL),  # Choices updated in server
       selectInput("subcountyInput", "Subcounty", choices = NULL),  # Choices updated in server
       uiOutput("genderDistributionBox"),  # Gender distribution as a value box
-      plotlyOutput("riskLevelPlot")  # Risk level visualization
+      highchartOutput("riskLevelPlot")  # Risk level visualization
     ),
     mainPanel(
       tabsetPanel(
         tabPanel("Vaccination Counts", plotlyOutput("vaccinationPlot")),
+        tabPanel("Progress Tracking", highchartOutput("progressPlot")),
         tabPanel("Cadre Categorization", DTOutput("cadreTable")),
-        tabPanel("Progress Tracking", plotlyOutput("progressPlot")),
         tabPanel("Geographical Mapping", leafletOutput("map"))
       )
     )
+    
+    )
   )
-))
+)
+
 
 
 server <- function(input, output, session) {
@@ -136,21 +202,30 @@ server <- function(input, output, session) {
     
   
  ##Risk level visualization
-    output$riskLevelPlot <- renderPlotly({
+    output$riskLevelPlot <- renderHighchart({
       req(filtered_data())
       data <- filtered_data() %>%
         group_by(risk_level) %>%
         summarise(count = n()) %>%
         arrange(desc(count))
       
-      plot_ly(data, x = ~risk_level, y = ~count, type = 'bar', 
-              marker = list(color = 'rgba(50, 171, 96, 0.7)',
-                            line = list(color = 'rgba(50, 171, 96, 1.0)', width = 2))) %>%
-        layout(title = "Risk Level Distribution",
-               xaxis = list(title = "Risk Level"),
-               yaxis = list(title = "Count"),
-               hovermode = "closest")
+      # Check if the data frame is empty
+      if(nrow(data) == 0) {
+        # Return a default Highcharter object or a message
+        return(highchart() %>%
+                 hc_title(text = "No data available for the selected filters"))
+      }
+      
+      # Proceed with rendering the Highcharter widget if data is available
+      hchart(data, "column", hcaes(x = risk_level, y = count)) %>%
+        hc_title(text = "Risk Level Distribution") %>%
+        hc_xAxis(title = list(text = "Risk Level")) %>%
+        hc_yAxis(title = list(text = "Count")) %>%
+        hc_plotOptions(column = list(borderColor = 'rgba(50, 171, 96, 1.0)', color = 'rgba(50, 171, 96, 0.7)')) %>%
+        hc_add_theme(hc_theme_flat())
     })
+    
+    
   
   ##Cadre categorization
     output$cadreTable <- renderDT({
@@ -179,7 +254,7 @@ server <- function(input, output, session) {
         filter(NAME_1 == "Kakamega") %>%
         select(NAME_2, geometry)
       
-      # omitting the CHMT subcounty by changing it to : Lurambi
+      #omitting the CHMT subcounty by changing it to : Lurambi
       HCWs_data <- HCWs_data |>
         mutate(subcounty = ifelse(subcounty == "CHMT", "Lurambi", subcounty))
       
@@ -223,48 +298,68 @@ server <- function(input, output, session) {
     })
     
   ##Progress tracking
-  output$progressPlot <- renderPlotly({
-    req(filtered_data())
-    total_vaccinations <- filtered_data() %>%
-      nrow()  # Count the total number of vaccinated HCWs
-    target <- 7500
-    progress_percentage <- min((total_vaccinations / target) * 100, 100)  # Calculate progress as a percentage
-    
-    plot_ly(
-      domain = list(x = c(0, 1), y = c(0, 1)),
-      value = total_vaccinations,
-      title = list(text = "Progress Towards Vaccination Target"),
-      type = "indicator",
-      mode = "gauge+number",
-      gauge = list(
-        axis = list(range = list(0, target), tickwidth = 1, tickcolor = "darkblue"),
-        bar = list(color = "darkblue"),
-        steps = list(
-          list(range = c(0, target * 0.5), color = "lightgray"),
-          list(range = c(target * 0.5, target * 0.75), color = "gray"),
-          list(range = c(target * 0.75, target), color = "darkgray")
-        ),
-        threshold = list(
-          line = list(color = "red", width = 4),
-          thickness = 0.75,
-          value = target
-        )
-      ),
-      number = list(
-        valueformat = ",",
-        suffix = " HCWs",
-        font = list(size = 20)
-      )
-    ) %>%
-      layout(
-        margin = list(t = 50, r = 25, l = 25, b = 25),
-        annotations = list(
+    output$progressPlot <- renderHighchart({
+      req(filtered_data())
+      total_vaccinations <- filtered_data() %>%
+        nrow()  # Count the total number of vaccinated HCWs
+      target <- 7500
+      progress_percentage <- min((total_vaccinations / target) * 100, 100)  # Calculate progress as a percentage
+      
+      highchart() %>%
+        hc_chart(type = "solidgauge") %>%
+        hc_title(text = "Progress Towards Vaccination Target") %>%
+        hc_pane(
+          startAngle = -90,
+          endAngle = 90,
+          background = list(
+            innerRadius = '60%',
+            outerRadius = '100%',
+            shape = 'arc'
+          )
+        ) %>%
+        hc_yAxis(
+          min = 0,
+          max = target,
+          lineWidth = 0,
+          tickPositions = NULL,
+          title = list(text = ''),
+          labels = list(enabled = FALSE)
+        ) %>%
+        hc_series(
           list(
-            x = 0.5,
-            y = 0.2,
-            text = paste(round(progress_percentage, 2), "% of target"),
-            showarrow = FALSE,
-            font = list(size = 16))))})
+            name = "Vaccinated HCWs",
+            data = list(list(y = total_vaccinations, color = '#337ab7')),
+            dataLabels = list(
+              format = paste('<div style="text-align:center; margin-top:30px;">',  # Increase margin-top for more spacing
+                             '<span style="font-size:25px;color:black">{y}</span>',
+                             '<span style="font-size:12px;opacity:0.4"><br>HCWs</span><br/>',  # Added <br> for spacing
+                             '<span style="font-size:20px;color:black">', round(progress_percentage, 2), '%</span>',
+                             '</div>'),
+              borderWidth = 0,
+              y = 25  # Increase y offset to move text further below the gauge
+            ),
+            tooltip = list(valueSuffix = ' HCWs')
+          )
+        ) %>%
+        hc_tooltip(
+          pointFormat = '<span style="color:{point.color}">\u25CF</span> <b>{point.y}</b>/{series.userOptions.yAxis.max} HCWs'
+        ) %>%
+        hc_plotOptions(
+          solidgauge = list(
+            innerRadius = '60%',
+            dataLabels = list(y = 5),
+            linecap = 'round',
+            stickyTracking = FALSE
+          )
+        ) %>%
+        hc_add_theme(
+          hc_theme_elementary(
+            base = '#FFF',
+            text = list(color = '#333')
+          )
+        )
+    })
+    
   
     ##Secure access setup
   res_auth <- secure_server(

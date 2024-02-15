@@ -19,6 +19,7 @@ credentials <- data.frame(
   password = c("pass1", "adminpass"), 
   stringsAsFactors = FALSE)
 
+##User Interface
 ui <- secure_app(fluidPage(
   tags$head(
     tags$style(HTML("
@@ -95,58 +96,53 @@ ui <- secure_app(fluidPage(
         tabPanel("Vaccination Counts", plotlyOutput("vaccinationPlot")),
         tabPanel("Progress Tracking", highchartOutput("progressPlot")),
         tabPanel("Cadre Categorization", DTOutput("cadreTable")),
-        tabPanel("Geographical Mapping", leafletOutput("map"))
-      )
-    )
-    
-    )
-  )
-)
+        tabPanel("Geographical Mapping", leafletOutput("map")),
+      )))))
 
-
-
+##Server function 
 server <- function(input, output, session) {
 
-  ## Reactive value to store filtered data
+  ##Reactive value to store filtered data
   filtered_data <- reactiveVal()
   
-  ## Populate team dropdown
+  ##Populating Teams dropdown
   observe({
     updateSelectInput(session, "teamInput", choices = unique(HCWs_data$team))
   })
   
-  ## Update subcountyInput based on teamInput selection
+  ##Update subcounty inputs based on team input selection
   observeEvent(input$teamInput, {
-    ## Find subcounties associated with the selected team
+    
+    ##Find subcounties associated with the selected team
     associated_subcounties <- HCWs_data %>%
       filter(team == input$teamInput) %>%
       .$subcounty %>%
       unique()
     
-    ## Update subcountyInput choices
+    ##Update subcounty input choices
     updateSelectInput(session, "subcountyInput", choices = associated_subcounties)
   })
   
-  ## Update filtered data based on selections or special categorization for CHMT in Lurambi
+  ##Update filtered data based on selections/special categorization for CHMT in Lurambi
   observe({
     req(input$teamInput, input$subcountyInput)  ## Ensure inputs are available
     
-    ## Filter data based on selections
+    ##Filter data based on selections
     temp_filtered_data <- HCWs_data %>%
       filter(team %in% input$teamInput,
              subcounty %in% input$subcountyInput)
     
-    ## Special handling for CHMT within Lurambi subcounty
+    ##Special handling for CHMT within Lurambi subcounty
     if ("CHMT" %in% input$teamInput && "Lurambi" %in% input$subcountyInput) {
       temp_filtered_data <- temp_filtered_data %>%
         mutate(subcounty = if_else(subcounty == "CHMT", "Lurambi", subcounty))
     }
     
-    ## Update the reactive value
+    ##Update the reactive value
     filtered_data(temp_filtered_data)
   })
   
-    ##Vaccination counts plot  
+    ##Vaccination plot  
     output$vaccinationPlot <- renderPlotly({
       req(filtered_data())
       data <- filtered_data() %>%
@@ -155,7 +151,6 @@ server <- function(input, output, session) {
         summarise(daily_count = n()) %>%
         mutate(cumulative_count = cumsum(daily_count))
       
-      ##interactive plots
       p <- plot_ly(data, x = ~date) %>%
         add_lines(y = ~daily_count, name = 'Daily Count', line = list(color = 'blue')) %>%
         add_lines(y = ~cumulative_count, name = 'Cumulative Count', line = list(color = 'red')) %>%
@@ -173,12 +168,12 @@ server <- function(input, output, session) {
       req(filtered_data())
       data <- filtered_data()
       
-      # Counts for each gender
+      ##Counts for each gender
       female_count <- sum(data$sex == "Female", na.rm = TRUE)
       male_count <- sum(data$sex == "Male", na.rm = TRUE)
       total_count <- nrow(data)
       
-      # Proportions for each gender
+      ##Proportions for each gender
       proportion_female <- ifelse(total_count > 0, female_count / total_count, 0)
       proportion_male <- ifelse(total_count > 0, male_count / total_count, 0)
       
@@ -196,10 +191,7 @@ server <- function(input, output, session) {
           tags$i(class = "fa fa-female", style = "color: #d9534f;"),  # Female icon
           span(" Female HCWs: ", strong(female_count),
                " (", strong(sprintf("%.2f%%", proportion_female * 100)), ")")
-        )
-      )
-    })
-    
+        ))})
   
  ##Risk level visualization
     output$riskLevelPlot <- renderHighchart({
@@ -209,14 +201,14 @@ server <- function(input, output, session) {
         summarise(count = n()) %>%
         arrange(desc(count))
       
-      # Check if the data frame is empty
+      ##Check if the data frame is empty
       if(nrow(data) == 0) {
-        # Return a default Highcharter object or a message
+        ##Return a default Highcharter object/message
         return(highchart() %>%
                  hc_title(text = "No data available for the selected filters"))
       }
       
-      # Proceed with rendering the Highcharter widget if data is available
+      ##Proceed with rendering the Highcharter widget if data is available
       hchart(data, "column", hcaes(x = risk_level, y = count)) %>%
         hc_title(text = "Risk Level Distribution") %>%
         hc_xAxis(title = list(text = "Risk Level")) %>%
@@ -224,8 +216,6 @@ server <- function(input, output, session) {
         hc_plotOptions(column = list(borderColor = 'rgba(50, 171, 96, 1.0)', color = 'rgba(50, 171, 96, 0.7)')) %>%
         hc_add_theme(hc_theme_flat())
     })
-    
-    
   
   ##Cadre categorization
     output$cadreTable <- renderDT({
@@ -243,11 +233,11 @@ server <- function(input, output, session) {
                 rownames = FALSE) %>%
         formatStyle('Percentage', textAlign = 'right')})
   
-  ##Geographical mapping
+     ##Geographical mapping
     output$map <- renderLeaflet({
       
-      ##Shape file
-      shapefile_data <- st_read("gadm41_KEN_shp/gadm41_KEN_2.shp")
+     ##Shape file
+    shapefile_data <- st_read("gadm41_KEN_shp/gadm41_KEN_2.shp")
       
       ##Filter for Kakamega county
       kakamega_data <- shapefile_data %>%
@@ -269,7 +259,7 @@ server <- function(input, output, session) {
         distinct(subcounty, .keep_all = TRUE) %>%
         left_join(hcw_counts_by_subcounty, by = "subcounty")
       
-      ##Convert mapped_data to an sf object
+      ##Convert mapped data to an sf object
       mapped_data <- st_as_sf(mapped_data, sf_column_name = "geometry") 
       
       ##Use the pre-processed and merged sf object for the leaflet map
@@ -294,8 +284,7 @@ server <- function(input, output, session) {
           values = ~vaccinated_hcw_count,
           title = "HCWs Vaccinated",
           opacity = 1
-        )
-    })
+        )})
     
   ##Progress tracking
     output$progressPlot <- renderHighchart({
@@ -356,10 +345,7 @@ server <- function(input, output, session) {
           hc_theme_elementary(
             base = '#FFF',
             text = list(color = '#333')
-          )
-        )
-    })
-    
+          ))})
   
     ##Secure access setup
   res_auth <- secure_server(
